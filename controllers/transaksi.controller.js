@@ -36,3 +36,68 @@ exports.midtransChargeTransaction = async (req, res) => {
 }
 
 
+exports.midtransGetStatusTransaction = async (req, res) => {
+
+    try {
+
+        let dataMidtransTransaction = await Transaksi.findOne({ // lakukan cek data transaksi pada database
+            where: {
+                order_id: req.params.order_id,
+            },
+        });
+
+        if (dataMidtransTransaction) {
+            coreApi.transaction.status(dataMidtransTransaction.order_id) // lakukan get transaction status ke server midtrans
+                .then((responseGetTransactionStatus) => {
+                    console.log(responseGetTransactionStatus);
+                    Transaksi.update({
+                        response_midtrans: JSON.stringify(responseGetTransactionStatus),
+                        transaction_status: responseGetTransactionStatus.transaction_status,
+                    }, {
+                        where: {
+                            order_id: responseGetTransactionStatus.order_id,
+                        },
+                    }).then(() => {
+                        return res.status(200).json({ success: true, message: `Berhasil get status transaction, order_id: ${req.params.order_id}`, data: responseGetTransactionStatus });
+                    }).catch(error => {
+                        return res.status(400).json({ success: false, message: error.message, });
+                    });
+                }).catch(error => {
+                    return res.status(400).json({ success: false, message: error.message, });
+                });
+        } else {
+            return res.status(404).json({ success: false, message: "order id tidak ditemukan!" });
+        }
+
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message, });
+    }
+}
+
+
+exports.midtransNotification = async (req, res) => {
+
+    try {
+        coreApi.transaction.notification(req.body) // terima body notifikasi dari server midtrans
+            .then((dataNotification) => {
+                // console.log(dataNotification);
+                Transaksi.update({
+                    response_midtrans: JSON.stringify(dataNotification),
+                    transaction_status: dataNotification.transaction_status,
+                }, {
+                    where: {
+                        order_id: dataNotification.order_id,
+                    }
+                }).then(() => {
+                    return res.status(200).json({ success: true, message: "Berhasil terima notifikasi!", data: dataNotification });
+                }).catch(error => {
+                    return res.status(400).json({ success: false, message: error.message, });
+                });
+            }).catch(error => {
+                return res.status(400).json({ success: false, message: error.message, });
+            });
+
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message, });
+    }
+}

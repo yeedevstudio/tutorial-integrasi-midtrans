@@ -10,7 +10,9 @@ module.exports = (app) => {
     });
 
     // Midtrans Transaction
+    app.get('/midtrans-transaction/transaction-status/:order_id', controller.midtransGetStatusTransaction);
     app.post('/midtrans-transaction/charge', controller.midtransChargeTransaction);
+    app.post('/midtrans-transaction/notification', controller.midtransNotification);
 
 };
 
